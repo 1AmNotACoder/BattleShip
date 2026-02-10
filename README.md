@@ -2,6 +2,8 @@
 
 A browser-based Battleship game built with React, TypeScript, Vite, and Tailwind CSS. Play against an AI opponent with hunt/target logic.
 
+## Live Demo: <https://battleship-gameapp-ddb15s52.devinapps.com/>
+
 ## Features
 
 - Two 10x10 boards: Your Fleet and Enemy Waters
