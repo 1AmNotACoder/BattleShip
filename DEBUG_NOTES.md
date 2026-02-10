@@ -30,10 +30,10 @@
 - `createEmptyBoard()`: Returns a fresh 10x10 board
 - `canPlaceShip(board, row, col, length, horizontal)`: Validates placement
 - `processShot(board, ships, row, col)`: Resolves a shot, returns hit/miss/sunk
-- `checkShipSunk(ship, board)`: Checks if all ship cells are hit
+- `checkShipSunk(ship, board)`: Checks if all ship cells are hit.
 
 ## Known Considerations
 
 - Ship placement does not enforce spacing between ships (adjacent placement is allowed per standard Battleship rules)
-- AI target queue may contain duplicates or already-shot cells; these are filtered at selection time
-- The `processShot` function is pure and does not mutate input arrays
+- AI target queue may contain duplicates or already-shot cells; these are filtered at selection time.
+- The `processShot` function is pure and does not mutate input arrays.
