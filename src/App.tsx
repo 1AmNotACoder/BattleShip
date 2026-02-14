@@ -241,16 +241,16 @@ function getCellColor(cell: CellState, isPlayerBoard: boolean, phase: GamePhase)
   }
 }
 
-function getCellIcon(cell: CellState): string {
+function getCellContent(cell: CellState): React.ReactNode {
   switch (cell) {
     case 'hit':
-      return '\u{1F4A5}'
+      return <span className="text-white font-bold text-xs sm:text-sm leading-none">{"\u{1F4A5}"}</span>
     case 'miss':
-      return '\u2022'
+      return <span className="text-slate-600 font-bold text-xs sm:text-sm leading-none">{"\u2715"}</span>
     case 'sunk':
-      return '\u{1F525}'
+      return <span className="text-white font-bold text-xs sm:text-sm leading-none">{"\u{1F525}"}</span>
     default:
-      return ''
+      return null
   }
 }
 
@@ -277,14 +277,14 @@ function BoardGrid({
 }) {
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-lg font-bold mb-2 text-slate-700">{label}</h2>
+      <h2 className="text-sm sm:text-lg font-bold mb-1 sm:mb-2 text-slate-700">{label}</h2>
       <div className="inline-block" onMouseLeave={onBoardLeave}>
         <div className="flex">
-          <div className="w-8 h-8" />
+          <div className="w-6 h-6 sm:w-8 sm:h-8" />
           {COL_LABELS.map((l) => (
             <div
               key={l}
-              className="w-8 h-8 flex items-center justify-center text-xs font-semibold text-slate-500"
+              className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-semibold text-slate-500"
             >
               {l}
             </div>
@@ -292,7 +292,7 @@ function BoardGrid({
         </div>
         {board.map((row, ri) => (
           <div key={ri} className="flex">
-            <div className="w-8 h-8 flex items-center justify-center text-xs font-semibold text-slate-500">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-semibold text-slate-500">
               {ROW_LABELS[ri]}
             </div>
             {row.map((cell, ci) => {
@@ -307,13 +307,13 @@ function BoardGrid({
               return (
                 <div
                   key={ci}
-                  className={`w-8 h-8 border border-slate-300 flex items-center justify-center text-sm ${bgClass} ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 border border-slate-300 flex items-center justify-center ${bgClass} ${
                     clickable ? 'cursor-pointer' : ''
                   } transition-colors duration-100`}
                   onClick={() => clickable && onCellClick?.(ri, ci)}
                   onMouseEnter={() => onCellHover?.(ri, ci)}
                 >
-                  {getCellIcon(cell)}
+                  {getCellContent(cell)}
                 </div>
               )
             })}
@@ -327,16 +327,42 @@ function BoardGrid({
 function ShipList({ ships, title }: { ships: Ship[]; title: string }) {
   return (
     <div className="mt-2">
-      <h3 className="text-sm font-semibold text-slate-600 mb-1">{title}</h3>
+      <h3 className="text-xs sm:text-sm font-semibold text-slate-600 mb-1">{title}</h3>
       <div className="flex flex-col gap-0.5">
         {ships.map((s, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
+          <div key={i} className="flex items-center gap-2 text-xs sm:text-sm">
             <span className={s.sunk ? 'line-through text-red-500' : 'text-slate-700'}>
               {s.name}
             </span>
             <span className="text-slate-400">
               {'\u25A0'.repeat(s.length)}
             </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Legend() {
+  const items: { color: string; icon: React.ReactNode; label: string }[] = [
+    { color: 'bg-sky-100', icon: null, label: 'Water (unknown)' },
+    { color: 'bg-gray-400', icon: <span className="text-slate-600 font-bold text-xs leading-none">{"\u2715"}</span>, label: 'Miss' },
+    { color: 'bg-red-500', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F4A5}"}</span>, label: 'Hit' },
+    { color: 'bg-red-800', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F525}"}</span>, label: 'Sunk' },
+    { color: 'bg-blue-500', icon: null, label: 'Your ship' },
+  ]
+
+  return (
+    <div className="bg-white/80 rounded-lg border border-slate-200 px-3 py-2">
+      <h3 className="text-xs sm:text-sm font-semibold text-slate-600 mb-1.5">Legend</h3>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className={`w-5 h-5 sm:w-6 sm:h-6 border border-slate-300 rounded-sm flex items-center justify-center ${item.color}`}>
+              {item.icon}
+            </div>
+            <span className="text-[10px] sm:text-xs text-slate-600">{item.label}</span>
           </div>
         ))}
       </div>
@@ -498,18 +524,18 @@ function App() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4"
+      className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-2 py-3 sm:p-4"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-center text-slate-800 mb-1">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-xl sm:text-3xl font-bold text-center text-slate-800 mb-1">
           Battleship
         </h1>
 
-        <div className="text-center mb-4">
+        <div className="text-center mb-2 sm:mb-4">
           <div
-            className={`inline-block px-4 py-2 rounded-lg text-sm font-medium ${
+            className={`inline-block px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
               winner === 'Player'
                 ? 'bg-green-100 text-green-800'
                 : winner === 'AI'
@@ -522,15 +548,15 @@ function App() {
         </div>
 
         {phase === 'placement' && (
-          <div className="text-center mb-3 flex items-center justify-center gap-3">
+          <div className="text-center mb-2 sm:mb-3 flex items-center justify-center gap-2 sm:gap-3">
             <button
-              className="px-3 py-1.5 bg-slate-700 text-white rounded text-sm hover:bg-slate-600 transition-colors"
+              className="px-2 py-1 sm:px-3 sm:py-1.5 bg-slate-700 text-white rounded text-xs sm:text-sm hover:bg-slate-600 transition-colors"
               onClick={() => setHorizontal((prev) => !prev)}
             >
-              Orientation: {horizontal ? 'Horizontal' : 'Vertical'}
+              {horizontal ? 'Horizontal' : 'Vertical'}
             </button>
             <button
-              className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-500 transition-colors"
+              className="px-2 py-1 sm:px-3 sm:py-1.5 bg-indigo-600 text-white rounded text-xs sm:text-sm hover:bg-indigo-500 transition-colors"
               onClick={randomPlacement}
             >
               Random Placement
@@ -538,7 +564,7 @@ function App() {
           </div>
         )}
 
-        <div className="flex flex-wrap justify-center gap-8 lg:gap-16">
+        <div className="flex flex-col md:flex-row md:justify-center md:items-start gap-4 sm:gap-6 lg:gap-12">
           <div className="flex flex-col items-center">
             <BoardGrid
               board={playerBoard}
@@ -566,10 +592,14 @@ function App() {
           </div>
         </div>
 
+        <div className="flex justify-center mt-4 sm:mt-6">
+          <Legend />
+        </div>
+
         {phase === 'gameover' && (
-          <div className="text-center mt-6">
+          <div className="text-center mt-4 sm:mt-6">
             <button
-              className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-lg"
+              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-base sm:text-lg"
               onClick={resetGame}
             >
               Play Again
@@ -577,13 +607,13 @@ function App() {
           </div>
         )}
 
-        <div className="text-center mt-6 text-xs text-slate-400">
+        <div className="text-center mt-3 sm:mt-6 text-[10px] sm:text-xs text-slate-400">
           {phase === 'placement' && 'Click cells on your board to place ships. Press R to rotate.'}
           {phase === 'battle' && (playerTurn ? 'Your turn \u2014 click enemy waters to fire.' : 'AI is thinking...')}
           {phase === 'gameover' && `Game over \u2014 ${winner} wins!`}
         </div>
 
-        <div className="text-center mt-4">
+        <div className="text-center mt-3 sm:mt-4">
           <button
             className="px-3 py-1 text-slate-400 border border-slate-300 rounded text-xs hover:bg-slate-100 transition-colors"
             onClick={resetGame}
