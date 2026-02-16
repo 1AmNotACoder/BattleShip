@@ -168,4 +168,32 @@ Validated stats reset behavior on:
 
 All existing unit tests pass after refactor.
 
+---
+
+## P1-C Attempted Enhancement: Hit Sound Effect
+
+### Goal
+Incorporate lightweight audio feedback on successful player hits.
+
+### Implementation Attempt
+- Added HTMLAudioElement-based playback triggered on player hit.
+- Introduced a Sound On/Off toggle (default Off).
+
+### Issues Encountered
+- Audio playback timing caused minor UI rendering inconsistencies.
+- Some visual state updates appeared delayed during rapid interactions.
+- Overall experience felt less stable under repeated gameplay.
+
+### Decision
+The sound feature was reverted to preserve:
+- Visual stability
+- Deterministic state updates
+- Demo reliability
+
+### Rationale
+Given the interview context, reliability and clarity were prioritized over non-essential enhancements.
+
+All existing functionality remains stable.
+
+
 
