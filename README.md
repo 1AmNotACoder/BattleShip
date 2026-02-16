@@ -62,3 +62,20 @@ npx vitest run
 - React 18 + TypeScript
 - Vite
 - Tailwind CSS
+
+## Visual Enhancements
+
+A subtle ocean-themed background was added to improve visual identity while preserving board readability and contrast.
+
+### Sound Effects (Attempted, Deferred)
+
+A “hit” sound effect was briefly implemented based on beta feedback.  
+However, during validation:
+
+- Audio playback interfered with layout rendering in certain states.
+- Browser audio handling introduced minor inconsistencies.
+- The sound quality did not meaningfully improve the experience.
+
+To maintain stability and demo reliability, the sound feature was reverted.
+
+The application remains intentionally focused on functional clarity and predictable behavior over non-essential effects.
