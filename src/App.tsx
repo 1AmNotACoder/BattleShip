@@ -117,6 +117,8 @@ function allShipsSunk(ships: Ship[]): boolean {
   return ships.every((s) => s.sunk)
 }
 
+type Difficulty = 'easy' | 'normal'
+
 type AIState = {
   mode: 'hunt' | 'target'
   targets: [number, number][]
@@ -134,11 +136,30 @@ function getAdjacentCells(row: number, col: number): [number, number][] {
     .filter(([r, c]) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE)
 }
 
+function pickRandomCell(playerBoard: Board): [number, number] {
+  const available: [number, number][] = []
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (playerBoard[r][c] === 'empty' || playerBoard[r][c] === 'ship') {
+        available.push([r, c])
+      }
+    }
+  }
+  const idx = Math.floor(Math.random() * available.length)
+  return available[idx]
+}
+
 function aiChooseTarget(
   playerBoard: Board,
-  aiState: AIState
+  aiState: AIState,
+  difficulty: Difficulty
 ): { row: number; col: number; newAIState: AIState } {
   const newState = { ...aiState, targets: [...aiState.targets], hitStack: [...aiState.hitStack] }
+
+  if (difficulty === 'easy') {
+    const [row, col] = pickRandomCell(playerBoard)
+    return { row, col, newAIState: newState }
+  }
 
   while (newState.targets.length > 0) {
     const [r, c] = newState.targets.pop()!
@@ -148,18 +169,7 @@ function aiChooseTarget(
   }
 
   newState.mode = 'hunt'
-
-  const available: [number, number][] = []
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      if (playerBoard[r][c] === 'empty' || playerBoard[r][c] === 'ship') {
-        available.push([r, c])
-      }
-    }
-  }
-
-  const idx = Math.floor(Math.random() * available.length)
-  const [row, col] = available[idx]
+  const [row, col] = pickRandomCell(playerBoard)
   return { row, col, newAIState: newState }
 }
 
@@ -190,9 +200,10 @@ export function processShot(
 function processAIShot(
   playerBoard: Board,
   playerShips: Ship[],
-  aiState: AIState
+  aiState: AIState,
+  difficulty: Difficulty
 ): { newBoard: Board; newShips: Ship[]; newAIState: AIState; result: string; shotResult: 'hit' | 'miss' | 'sunk' } {
-  const { row, col, newAIState } = aiChooseTarget(playerBoard, aiState)
+  const { row, col, newAIState } = aiChooseTarget(playerBoard, aiState, difficulty)
   const { newBoard, newShips, result, sunkShipName } = processShot(playerBoard, playerShips, row, col)
 
   if (result === 'hit') {
@@ -363,6 +374,7 @@ function App() {
   const [winner, setWinner] = useState<string | null>(null)
   const [playerTurn, setPlayerTurn] = useState(true)
   const [stats, setStats] = useState<GameStatsData>(createGameStats)
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
 
   const handlePlacementHover = useCallback(
     (row: number, col: number) => {
@@ -445,7 +457,7 @@ function App() {
           newAIState,
           result: aiResult,
           shotResult,
-        } = processAIShot(playerBoard, playerShips, aiState)
+        } = processAIShot(playerBoard, playerShips, aiState, difficulty)
 
         setPlayerBoard(updatedPlayerBoard)
         setPlayerShips(updatedPlayerShips)
@@ -469,7 +481,7 @@ function App() {
         }
       }, 500)
     },
-    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState]
+    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState, difficulty]
   )
 
   const handleKeyDown = useCallback(
@@ -524,6 +536,18 @@ function App() {
         <h1 className="text-xl sm:text-3xl font-bold text-center text-slate-800 mb-1">
           Battleship
         </h1>
+
+        <div className="flex justify-center mb-2">
+          <select
+            className="px-2 py-1 rounded text-xs sm:text-sm border border-slate-300 bg-white text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+            disabled={phase !== 'placement'}
+          >
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
 
         <div className="text-center mb-2 sm:mb-4">
           <div
