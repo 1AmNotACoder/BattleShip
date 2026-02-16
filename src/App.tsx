@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import './App.css'
 import { Legend } from './components/Legend'
 import { GameStats, createGameStats } from './components/GameStats'
@@ -375,6 +375,18 @@ function App() {
   const [playerTurn, setPlayerTurn] = useState(true)
   const [stats, setStats] = useState<GameStatsData>(createGameStats)
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
+  const [soundEnabled, setSoundEnabled] = useState(false)
+  const hitAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  const playHitSound = useCallback(() => {
+    if (!soundEnabled) return
+    if (!hitAudioRef.current) {
+      hitAudioRef.current = new Audio('/hit.wav')
+    }
+    const audio = hitAudioRef.current
+    audio.currentTime = 0
+    audio.play().catch(() => {})
+  }, [soundEnabled])
 
   const handlePlacementHover = useCallback(
     (row: number, col: number) => {
@@ -433,6 +445,7 @@ function App() {
       } else if (result === 'hit') {
         setMessage(`Hit at ${String.fromCharCode(65 + col)}${row + 1}!`)
         setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerHits: prev.playerHits + 1, turns: prev.turns + 1 }))
+        playHitSound()
       } else {
         setMessage(`Miss at ${String.fromCharCode(65 + col)}${row + 1}.`)
         setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerMisses: prev.playerMisses + 1, turns: prev.turns + 1 }))
@@ -481,7 +494,7 @@ function App() {
         }
       }, 500)
     },
-    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState, difficulty]
+    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState, difficulty, playHitSound]
   )
 
   const handleKeyDown = useCallback(
@@ -537,7 +550,7 @@ function App() {
           Battleship
         </h1>
 
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-center items-center gap-3 mb-2">
           <select
             className="px-2 py-1 rounded text-xs sm:text-sm border border-slate-300 bg-white text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
             value={difficulty}
@@ -547,6 +560,16 @@ function App() {
             <option value="easy">Easy</option>
             <option value="normal">Normal</option>
           </select>
+          <button
+            className={`px-2 py-1 rounded text-xs sm:text-sm border transition-colors ${
+              soundEnabled
+                ? 'border-blue-400 bg-blue-50 text-blue-700'
+                : 'border-slate-300 bg-white text-slate-400'
+            }`}
+            onClick={() => setSoundEnabled(prev => !prev)}
+          >
+            {soundEnabled ? '\u{1F50A} Sound On' : '\u{1F507} Sound Off'}
+          </button>
         </div>
 
         <div className="text-center mb-2 sm:mb-4">
