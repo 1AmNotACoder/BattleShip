@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react'
 import './App.css'
+import { Legend } from './components/Legend'
+import { GameStats, createGameStats } from './components/GameStats'
+import type { GameStatsData } from './components/GameStats'
 
 const BOARD_SIZE = 10
 const SHIPS = [
@@ -188,7 +191,7 @@ function processAIShot(
   playerBoard: Board,
   playerShips: Ship[],
   aiState: AIState
-): { newBoard: Board; newShips: Ship[]; newAIState: AIState; result: string } {
+): { newBoard: Board; newShips: Ship[]; newAIState: AIState; result: string; shotResult: 'hit' | 'miss' | 'sunk' } {
   const { row, col, newAIState } = aiChooseTarget(playerBoard, aiState)
   const { newBoard, newShips, result, sunkShipName } = processShot(playerBoard, playerShips, row, col)
 
@@ -199,7 +202,7 @@ function processAIShot(
     for (const cell of adjacent) {
       newAIState.targets.push(cell)
     }
-    return { newBoard, newShips, newAIState, result: `AI hit at ${String.fromCharCode(65 + col)}${row + 1}!` }
+    return { newBoard, newShips, newAIState, result: `AI hit at ${String.fromCharCode(65 + col)}${row + 1}!`, shotResult: 'hit' }
   }
 
   if (result === 'sunk') {
@@ -213,10 +216,10 @@ function processAIShot(
       newAIState.targets = []
       newAIState.mode = 'hunt'
     }
-    return { newBoard, newShips, newAIState, result: `AI sank your ${sunkShipName}!` }
+    return { newBoard, newShips, newAIState, result: `AI sank your ${sunkShipName}!`, shotResult: 'sunk' }
   }
 
-  return { newBoard, newShips, newAIState, result: `AI missed at ${String.fromCharCode(65 + col)}${row + 1}.` }
+  return { newBoard, newShips, newAIState, result: `AI missed at ${String.fromCharCode(65 + col)}${row + 1}.`, shotResult: 'miss' }
 }
 
 const ROW_LABELS = Array.from({ length: BOARD_SIZE }, (_, i) => String(i + 1))
@@ -344,31 +347,6 @@ function ShipList({ ships, title }: { ships: Ship[]; title: string }) {
   )
 }
 
-function Legend() {
-  const items: { color: string; icon: React.ReactNode; label: string }[] = [
-    { color: 'bg-sky-100', icon: null, label: 'Water (unknown)' },
-    { color: 'bg-gray-400', icon: <span className="text-slate-600 font-bold text-xs leading-none">{"\u2715"}</span>, label: 'Miss' },
-    { color: 'bg-red-500', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F4A5}"}</span>, label: 'Hit' },
-    { color: 'bg-red-800', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F525}"}</span>, label: 'Sunk' },
-    { color: 'bg-blue-500', icon: null, label: 'Your ship' },
-  ]
-
-  return (
-    <div className="bg-white/80 rounded-lg border border-slate-200 px-3 py-2">
-      <h3 className="text-xs sm:text-sm font-semibold text-slate-600 mb-1.5">Legend</h3>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className={`w-5 h-5 sm:w-6 sm:h-6 border border-slate-300 rounded-sm flex items-center justify-center ${item.color}`}>
-              {item.icon}
-            </div>
-            <span className="text-[10px] sm:text-xs text-slate-600">{item.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function App() {
   const [phase, setPhase] = useState<GamePhase>('placement')
@@ -384,6 +362,7 @@ function App() {
   const [message, setMessage] = useState('Place your Carrier (5 cells). Press R to rotate.')
   const [winner, setWinner] = useState<string | null>(null)
   const [playerTurn, setPlayerTurn] = useState(true)
+  const [stats, setStats] = useState<GameStatsData>(createGameStats)
 
   const handlePlacementHover = useCallback(
     (row: number, col: number) => {
@@ -438,10 +417,13 @@ function App() {
 
       if (result === 'sunk') {
         setMessage(`You sank the AI's ${sunkShipName}!`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerHits: prev.playerHits + 1, playerShipsSunk: prev.playerShipsSunk + 1, turns: prev.turns + 1 }))
       } else if (result === 'hit') {
         setMessage(`Hit at ${String.fromCharCode(65 + col)}${row + 1}!`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerHits: prev.playerHits + 1, turns: prev.turns + 1 }))
       } else {
         setMessage(`Miss at ${String.fromCharCode(65 + col)}${row + 1}.`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerMisses: prev.playerMisses + 1, turns: prev.turns + 1 }))
       }
 
       setAiBoard(newAiBoard)
@@ -462,12 +444,21 @@ function App() {
           newShips: updatedPlayerShips,
           newAIState,
           result: aiResult,
+          shotResult,
         } = processAIShot(playerBoard, playerShips, aiState)
 
         setPlayerBoard(updatedPlayerBoard)
         setPlayerShips(updatedPlayerShips)
         setAiState(newAIState)
         setMessage(aiResult)
+
+        if (shotResult === 'sunk') {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiHits: prev.aiHits + 1, aiShipsSunk: prev.aiShipsSunk + 1 }))
+        } else if (shotResult === 'hit') {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiHits: prev.aiHits + 1 }))
+        } else {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiMisses: prev.aiMisses + 1 }))
+        }
 
         if (allShipsSunk(updatedPlayerShips)) {
           setPhase('gameover')
@@ -505,6 +496,7 @@ function App() {
     setMessage('Place your Carrier (5 cells). Press R to rotate.')
     setWinner(null)
     setPlayerTurn(true)
+    setStats(createGameStats())
   }, [])
 
   const randomPlacement = useCallback(() => {
@@ -596,15 +588,18 @@ function App() {
           <Legend />
         </div>
 
-        {phase === 'gameover' && (
-          <div className="text-center mt-4 sm:mt-6">
-            <button
-              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-base sm:text-lg"
-              onClick={resetGame}
-            >
-              Play Again
-            </button>
-          </div>
+        {phase === 'gameover' && winner && (
+          <>
+            <GameStats stats={stats} winner={winner} />
+            <div className="text-center mt-4 sm:mt-6">
+              <button
+                className="px-5 py-2 sm:px-6 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-base sm:text-lg"
+                onClick={resetGame}
+              >
+                Play Again
+              </button>
+            </div>
+          </>
         )}
 
         <div className="text-center mt-3 sm:mt-6 text-[10px] sm:text-xs text-slate-400">
