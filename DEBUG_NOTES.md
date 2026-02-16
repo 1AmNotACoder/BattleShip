@@ -126,3 +126,46 @@ Primary goal: catch regressions in the “happy path.”
   - Sunk-ship detection
 - These were not implemented in this iteration to keep scope focused on
   functional delivery and demo readiness.
+
+## Beta Feedback (Post-Initial Build)
+
+Three user types provided feedback:
+
+1. Non-technical user:
+   - Improve layout to fit fully on screen
+   - Clearer miss indicator
+   - Add legend explaining symbols
+
+2. Technical-focused user:
+   - Suggested authentication + persistent historical stats
+   - Deferred to keep scope focused on SPA demo
+
+3. Gameplay-focused user:
+   - Suggested visual polish, difficulty levels, stat recap
+   - Difficulty + stat recap prioritized for P1
+
+## P0 Changes Implemented
+
+- Responsive layout (mobile + desktop)
+- Miss indicator changed to "X"
+- Legend component added
+- Verified no regression via manual QA + automated tests
+
+## P1-A Enhancements
+
+Added a Game Recap panel at game completion to summarize:
+- Total shots
+- Hits
+- Misses
+- Accuracy %
+- Ships sunk
+- Total turns
+
+Validated stats reset behavior on:
+- Play Again
+- Reset Game
+- Mid-game reset
+
+All existing unit tests pass after refactor.
+
+
