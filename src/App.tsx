@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react'
 import './App.css'
+import { Legend } from './components/Legend'
+import { GameStats, createGameStats } from './components/GameStats'
+import type { GameStatsData } from './components/GameStats'
 
 const BOARD_SIZE = 10
 const SHIPS = [
@@ -114,6 +117,8 @@ function allShipsSunk(ships: Ship[]): boolean {
   return ships.every((s) => s.sunk)
 }
 
+type Difficulty = 'easy' | 'normal'
+
 type AIState = {
   mode: 'hunt' | 'target'
   targets: [number, number][]
@@ -131,11 +136,30 @@ function getAdjacentCells(row: number, col: number): [number, number][] {
     .filter(([r, c]) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE)
 }
 
+function pickRandomCell(playerBoard: Board): [number, number] {
+  const available: [number, number][] = []
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (playerBoard[r][c] === 'empty' || playerBoard[r][c] === 'ship') {
+        available.push([r, c])
+      }
+    }
+  }
+  const idx = Math.floor(Math.random() * available.length)
+  return available[idx]
+}
+
 function aiChooseTarget(
   playerBoard: Board,
-  aiState: AIState
+  aiState: AIState,
+  difficulty: Difficulty
 ): { row: number; col: number; newAIState: AIState } {
   const newState = { ...aiState, targets: [...aiState.targets], hitStack: [...aiState.hitStack] }
+
+  if (difficulty === 'easy') {
+    const [row, col] = pickRandomCell(playerBoard)
+    return { row, col, newAIState: newState }
+  }
 
   while (newState.targets.length > 0) {
     const [r, c] = newState.targets.pop()!
@@ -145,18 +169,7 @@ function aiChooseTarget(
   }
 
   newState.mode = 'hunt'
-
-  const available: [number, number][] = []
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      if (playerBoard[r][c] === 'empty' || playerBoard[r][c] === 'ship') {
-        available.push([r, c])
-      }
-    }
-  }
-
-  const idx = Math.floor(Math.random() * available.length)
-  const [row, col] = available[idx]
+  const [row, col] = pickRandomCell(playerBoard)
   return { row, col, newAIState: newState }
 }
 
@@ -187,9 +200,10 @@ export function processShot(
 function processAIShot(
   playerBoard: Board,
   playerShips: Ship[],
-  aiState: AIState
-): { newBoard: Board; newShips: Ship[]; newAIState: AIState; result: string } {
-  const { row, col, newAIState } = aiChooseTarget(playerBoard, aiState)
+  aiState: AIState,
+  difficulty: Difficulty
+): { newBoard: Board; newShips: Ship[]; newAIState: AIState; result: string; shotResult: 'hit' | 'miss' | 'sunk' } {
+  const { row, col, newAIState } = aiChooseTarget(playerBoard, aiState, difficulty)
   const { newBoard, newShips, result, sunkShipName } = processShot(playerBoard, playerShips, row, col)
 
   if (result === 'hit') {
@@ -199,7 +213,7 @@ function processAIShot(
     for (const cell of adjacent) {
       newAIState.targets.push(cell)
     }
-    return { newBoard, newShips, newAIState, result: `AI hit at ${String.fromCharCode(65 + col)}${row + 1}!` }
+    return { newBoard, newShips, newAIState, result: `AI hit at ${String.fromCharCode(65 + col)}${row + 1}!`, shotResult: 'hit' }
   }
 
   if (result === 'sunk') {
@@ -213,10 +227,10 @@ function processAIShot(
       newAIState.targets = []
       newAIState.mode = 'hunt'
     }
-    return { newBoard, newShips, newAIState, result: `AI sank your ${sunkShipName}!` }
+    return { newBoard, newShips, newAIState, result: `AI sank your ${sunkShipName}!`, shotResult: 'sunk' }
   }
 
-  return { newBoard, newShips, newAIState, result: `AI missed at ${String.fromCharCode(65 + col)}${row + 1}.` }
+  return { newBoard, newShips, newAIState, result: `AI missed at ${String.fromCharCode(65 + col)}${row + 1}.`, shotResult: 'miss' }
 }
 
 const ROW_LABELS = Array.from({ length: BOARD_SIZE }, (_, i) => String(i + 1))
@@ -344,31 +358,6 @@ function ShipList({ ships, title }: { ships: Ship[]; title: string }) {
   )
 }
 
-function Legend() {
-  const items: { color: string; icon: React.ReactNode; label: string }[] = [
-    { color: 'bg-sky-100', icon: null, label: 'Water (unknown)' },
-    { color: 'bg-gray-400', icon: <span className="text-slate-600 font-bold text-xs leading-none">{"\u2715"}</span>, label: 'Miss' },
-    { color: 'bg-red-500', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F4A5}"}</span>, label: 'Hit' },
-    { color: 'bg-red-800', icon: <span className="text-white font-bold text-xs leading-none">{"\u{1F525}"}</span>, label: 'Sunk' },
-    { color: 'bg-blue-500', icon: null, label: 'Your ship' },
-  ]
-
-  return (
-    <div className="bg-white/80 rounded-lg border border-slate-200 px-3 py-2">
-      <h3 className="text-xs sm:text-sm font-semibold text-slate-600 mb-1.5">Legend</h3>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className={`w-5 h-5 sm:w-6 sm:h-6 border border-slate-300 rounded-sm flex items-center justify-center ${item.color}`}>
-              {item.icon}
-            </div>
-            <span className="text-[10px] sm:text-xs text-slate-600">{item.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function App() {
   const [phase, setPhase] = useState<GamePhase>('placement')
@@ -384,6 +373,8 @@ function App() {
   const [message, setMessage] = useState('Place your Carrier (5 cells). Press R to rotate.')
   const [winner, setWinner] = useState<string | null>(null)
   const [playerTurn, setPlayerTurn] = useState(true)
+  const [stats, setStats] = useState<GameStatsData>(createGameStats)
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
 
   const handlePlacementHover = useCallback(
     (row: number, col: number) => {
@@ -438,10 +429,13 @@ function App() {
 
       if (result === 'sunk') {
         setMessage(`You sank the AI's ${sunkShipName}!`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerHits: prev.playerHits + 1, playerShipsSunk: prev.playerShipsSunk + 1, turns: prev.turns + 1 }))
       } else if (result === 'hit') {
         setMessage(`Hit at ${String.fromCharCode(65 + col)}${row + 1}!`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerHits: prev.playerHits + 1, turns: prev.turns + 1 }))
       } else {
         setMessage(`Miss at ${String.fromCharCode(65 + col)}${row + 1}.`)
+        setStats(prev => ({ ...prev, playerShots: prev.playerShots + 1, playerMisses: prev.playerMisses + 1, turns: prev.turns + 1 }))
       }
 
       setAiBoard(newAiBoard)
@@ -462,12 +456,21 @@ function App() {
           newShips: updatedPlayerShips,
           newAIState,
           result: aiResult,
-        } = processAIShot(playerBoard, playerShips, aiState)
+          shotResult,
+        } = processAIShot(playerBoard, playerShips, aiState, difficulty)
 
         setPlayerBoard(updatedPlayerBoard)
         setPlayerShips(updatedPlayerShips)
         setAiState(newAIState)
         setMessage(aiResult)
+
+        if (shotResult === 'sunk') {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiHits: prev.aiHits + 1, aiShipsSunk: prev.aiShipsSunk + 1 }))
+        } else if (shotResult === 'hit') {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiHits: prev.aiHits + 1 }))
+        } else {
+          setStats(prev => ({ ...prev, aiShots: prev.aiShots + 1, aiMisses: prev.aiMisses + 1 }))
+        }
 
         if (allShipsSunk(updatedPlayerShips)) {
           setPhase('gameover')
@@ -478,7 +481,7 @@ function App() {
         }
       }, 500)
     },
-    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState]
+    [phase, playerTurn, aiBoard, aiShips, playerBoard, playerShips, aiState, difficulty]
   )
 
   const handleKeyDown = useCallback(
@@ -505,6 +508,7 @@ function App() {
     setMessage('Place your Carrier (5 cells). Press R to rotate.')
     setWinner(null)
     setPlayerTurn(true)
+    setStats(createGameStats())
   }, [])
 
   const randomPlacement = useCallback(() => {
@@ -532,6 +536,18 @@ function App() {
         <h1 className="text-xl sm:text-3xl font-bold text-center text-slate-800 mb-1">
           Battleship
         </h1>
+
+        <div className="flex justify-center mb-2">
+          <select
+            className="px-2 py-1 rounded text-xs sm:text-sm border border-slate-300 bg-white text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+            disabled={phase !== 'placement'}
+          >
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
 
         <div className="text-center mb-2 sm:mb-4">
           <div
@@ -596,15 +612,18 @@ function App() {
           <Legend />
         </div>
 
-        {phase === 'gameover' && (
-          <div className="text-center mt-4 sm:mt-6">
-            <button
-              className="px-5 py-2 sm:px-6 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-base sm:text-lg"
-              onClick={resetGame}
-            >
-              Play Again
-            </button>
-          </div>
+        {phase === 'gameover' && winner && (
+          <>
+            <GameStats stats={stats} winner={winner} />
+            <div className="text-center mt-4 sm:mt-6">
+              <button
+                className="px-5 py-2 sm:px-6 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors text-base sm:text-lg"
+                onClick={resetGame}
+              >
+                Play Again
+              </button>
+            </div>
+          </>
         )}
 
         <div className="text-center mt-3 sm:mt-6 text-[10px] sm:text-xs text-slate-400">
