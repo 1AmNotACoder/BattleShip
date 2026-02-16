@@ -5,3 +5,46 @@
   padding: 0;
   text-align: left;
 }
+
+.ocean-bg {
+  background:
+    linear-gradient(180deg,
+      #e8f4f8 0%,
+      #d0ebf5 15%,
+      #b8e0f0 35%,
+      #a3d5e8 55%,
+      #c2e4ef 75%,
+      #daf0f7 100%
+    );
+  position: relative;
+}
+
+.ocean-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      170deg,
+      transparent,
+      transparent 80px,
+      rgba(255, 255, 255, 0.15) 80px,
+      rgba(255, 255, 255, 0.15) 82px,
+      transparent 82px,
+      transparent 160px
+    ),
+    repeating-linear-gradient(
+      185deg,
+      transparent,
+      transparent 120px,
+      rgba(255, 255, 255, 0.1) 120px,
+      rgba(255, 255, 255, 0.1) 123px,
+      transparent 123px,
+      transparent 240px
+    );
+  pointer-events: none;
+  z-index: 0;
+}

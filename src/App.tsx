@@ -528,7 +528,7 @@ function App() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 px-2 py-3 sm:p-4"
+      className="min-h-screen ocean-bg px-2 py-3 sm:p-4"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
